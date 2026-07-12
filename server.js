@@ -437,7 +437,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     function endResize() { resizeData = null; win.style.zIndex = ''; win.style.transition = ''; }
     resize.addEventListener('mousedown', function(e) { startResize(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation(); });
     resize.addEventListener('touchstart', function(e) { var t = e.touches[0]; startResize(t.clientX, t.clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
-    document.addEventListener('mousemove', function(e) { if (dragData) moveDrag(e.clientX, e.clientY); if (resizeData) moveResize(e.clientX, e.clientY); });
     document.addEventListener('mouseup', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
     document.addEventListener('touchmove', function(e) { var t = e.touches[0]; if (dragData) moveDrag(t.clientX, t.clientY); if (resizeData) moveResize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
@@ -474,7 +473,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 // ★ 修正ポイント2: / ルート（過去ログを埋め込む）
 app.get('/', (req, res) => {
   const pastLogs = logs.slice(-30);
-  const lconst logsJson = JSON.stringify(pastLogs);
+const logsJson = JSON.stringify(pastLogs);
 const photoCount = logs.filter(l => l.image).length || 0;
 const htmlWithData = HTML.replace(
   '<!-- PAST_LOGS -->',
@@ -747,4 +746,4 @@ server.listen(PORT, function() {
   console.log('Server running on port ' + PORT);
   console.log('📂 ログファイル: ' + LOG_FILE);
   console.log('📊 現在のログ件数: ' + logs.length);
-});
+});  
