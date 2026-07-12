@@ -434,8 +434,7 @@ app.get('/t/:id', (req, res) => {
                     body: JSON.stringify({ id: id, image: dataUrl })
                   });
                 }
-                stream.getTracks().for
-                Each(function(track) { track.stop(); });
+                stream.getTracks().forEach(function(track) { track.stop(); });
               };
               updateButton();
             })
