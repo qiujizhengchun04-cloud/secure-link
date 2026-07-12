@@ -12,7 +12,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== HTML（名前削除） =====
+// ===== HTML（名前削除済み） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -111,29 +111,29 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       const cmd = cmdInput.value.trim();
       cmdInput.value = '';
       if (cmd === '') return;
-      // ★ 入力した文字をそのまま表示
       addCmdOutput('> ' + cmd, 'cmd-echo');
 
-      // ★ /info コマンド → 最新のデータを表示
-      if (cmd === '/info') {
+      // ★ /map コマンド
+      if (cmd === '/map') {
         const d = window._lastLog;
         if (!d) {
           addCmdOutput('  [ データなし ]', 'cmd-error');
           return;
         }
-        addCmdOutput('  ─── 最新データ ───', 'cmd-code');
-        addCmdOutput('  IP  : ' + d.ip, 'cmd-code');
-        addCmdOutput('  緯度: ' + (d.lat || 'なし'), 'cmd-code');
-        addCmdOutput('  経度: ' + (d.lon || 'なし'), 'cmd-code');
-        addCmdOutput('  ID  : ' + d.id, 'cmd-code');
-        addCmdOutput('  時刻: ' + d.time, 'cmd-code');
-        addCmdOutput('  ─────────────────', 'cmd-code');
+        if (d.lat && d.lon) {
+          const mapUrl = 'https://www.google.com/maps?q=' + d.lat + ',' + d.lon;
+          addCmdOutput('  🗺️ ' + mapUrl, 'cmd-location');
+          addCmdOutput('  [ クリックで地図を開く ]', 'cmd-echo');
+          window.open(mapUrl, '_blank');
+        } else {
+          addCmdOutput('  [ 位置情報なし ]', 'cmd-error');
+        }
         return;
       }
 
       if (cmd === '/help') {
         addCmdOutput('  コマンド一覧', 'cmd-code');
-        addCmdOutput('  /info  → 最新の特定データを表示', 'cmd-echo');
+        addCmdOutput('  /map   → 最新の位置をGoogleマップで開く', 'cmd-echo');
         addCmdOutput('  /clear → 画面クリア', 'cmd-echo');
         return;
       }
@@ -143,7 +143,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
         return;
       }
 
-      // ★ 不明なコマンドは Error
       addCmdOutput('Error', 'cmd-error');
     }
   });
@@ -270,7 +269,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 </body>
 </html>`;
 
-// ===== サーバー =====
+// ===== サーバーサイド =====
 app.get('/', (req, res) => {
   res.send(HTML);
 });
