@@ -7,7 +7,7 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== ここからHTML（君がくれたやつを直した） =====
+// ===== HTML（コマンド画面＋ログ表示機能つき） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -22,27 +22,31 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .window .drag-area:active { cursor:grabbing; }
 .window .resize-handle { position:absolute; right:0; bottom:0; width:32px; height:32px; cursor:nwse-resize; z-index:20; touch-action:none; background:transparent; }
 .window .resize-handle::after { content:''; position:absolute; right:4px; bottom:4px; width:0; height:0; border-right:14px solid #555; border-bottom:14px solid #555; border-left:14px solid transparent; border-top:14px solid transparent; opacity:0.8; pointer-events:none; }
-#cmd-window { left:40px; top:40px; width:90vw; max-width:780px; height:50vh; min-width:400px; min-height:250px; }
+#cmd-window { left:40px; top:40px; width:90vw; max-width:780px; height:60vh; min-width:400px; min-height:300px; }
 #cmd-terminal { flex:1; background:#000; padding:20px 14px 8px 14px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
 #cmd-output { flex:1; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-size:14px; line-height:1.6; color:#fff; margin-bottom:4px; -webkit-overflow-scrolling:touch; }
 #cmd-output::-webkit-scrollbar { width:6px; background:#1a1a1a; }
 #cmd-output::-webkit-scrollbar-thumb { background:#555; }
-#cmd-input-line { display:flex; align-items:center; border-top:1px solid #333; padding-top:6px; flex-shrink:0; }
+#cmd-input-line { display:flex; align-items:center; border-top:1px solid #333; padding-top:6px; flex-shrink:0; gap:6px; flex-wrap:wrap; }
 #cmd-prompt { color:#fff; font-weight:normal; margin-right:8px; font-size:14px; white-space:pre; }
-#cmd-input { background:transparent; border:none; outline:none; color:#fff; font-family:inherit; font-size:14px; flex:1; caret-color:#fff; user-select:text; -webkit-user-select:text; touch-action:auto; pointer-events:auto; }
+#cmd-input { background:transparent; border:none; outline:none; color:#fff; font-family:inherit; font-size:14px; flex:1; min-width:100px; caret-color:#fff; user-select:text; -webkit-user-select:text; touch-action:auto; pointer-events:auto; }
 .cmd-echo { color:#fff; }
 .cmd-error { color:#ff4444; }
 .cmd-ip { color:#88ddff; }
 .cmd-notify { color:#ffaa44; }
-#menu-window { left:60px; top:55vh; width:80vw; max-width:480px; height:280px; min-width:300px; min-height:200px; padding:24px 20px 20px 20px; }
-#menu-window .menu-title { color:#fff; font-size:16px; margin-bottom:20px; font-weight:bold; }
-#menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:10px 30px; font-family:inherit; font-size:15px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; display:inline-block; }
+.cmd-log { color:#88ddff; }
+#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:180px; padding:20px 20px 18px 20px; }
+#menu-window .menu-title { color:#fff; font-size:15px; margin-bottom:14px; font-weight:bold; }
+#menu-window .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+#menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 24px; font-family:inherit; font-size:14px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
 #menu-window .btn-link:hover { background:#1a2a3a; }
-#menu-window .btn-copy { background:transparent; border:1px solid #888; color:#888; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; margin-left:10px; }
+#menu-window .btn-copy { background:transparent; border:1px solid #888; color:#888; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
 #menu-window .btn-copy:hover { background:#1a1a1a; }
 #menu-window .btn-copy.copy-success { color:#66ff88 !important; border-color:#66ff88; }
-#menu-window .result-area { margin-top:18px; padding-top:14px; border-top:1px solid #333; min-height:50px; color:#fff; font-size:13px; word-break:break-all; }
-#menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:6px; padding:4px 0; touch-action:auto; pointer-events:auto; }
+#menu-window .btn-logs { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
+#menu-window .btn-logs:hover { background:#1a2a3a; }
+#menu-window .result-area { margin-top:14px; padding-top:12px; border-top:1px solid #333; min-height:40px; color:#fff; font-size:13px; word-break:break-all; }
+#menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:4px; padding:4px 0; touch-action:auto; pointer-events:auto; }
 #menu-window .result-area .link-display:hover { color:#aaefff; }
 #menu-window .result-area .status-msg { color:#aaa; font-size:12px; }
 #menu-window .result-area .warning { color:#ff8844; font-size:12px; }
@@ -63,8 +67,11 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 <div id="menu-window" class="window">
   <div class="drag-area" id="menu-drag"></div>
   <div class="menu-title">■ リンク生成</div>
-  <button class="btn-link" id="generate-btn">リンク</button>
-  <button class="btn-copy" id="copy-btn" style="display:none;">📋 コピー</button>
+  <div class="btn-row">
+    <button class="btn-link" id="generate-btn">リンク</button>
+    <button class="btn-copy" id="copy-btn" style="display:none;">📋 コピー</button>
+    <button class="btn-logs" id="logs-btn">📋 ログ表示</button>
+  </div>
   <div class="result-area" id="result-area">
     <span class="status-msg">「リンク」を押すと相手に渡す用のリンクが生成されます</span>
   </div>
@@ -92,14 +99,17 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   });
   const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
+  const logsBtn = document.getElementById('logs-btn');
   const resultArea = document.getElementById('result-area');
   let currentLink = '';
+
+  // ===== リンク生成 =====
   async function generateLink() {
     try {
       const res = await fetch('/generate');
       const data = await res.json();
       currentLink = data.link;
-      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ リンク生成完了！ コピーして相手に送信</span><span class="warning">⚠ 自分で開くとテストになります</span>';
+      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ 生成完了！ コピーして相手に送信</span><span class="warning">⚠ 自分で開くとテスト</span>';
       copyBtn.style.display = 'inline-block';
       copyBtn.textContent = '📋 コピー';
       copyBtn.className = 'btn-copy';
@@ -108,10 +118,12 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
         window.open(currentLink, '_blank');
       });
     } catch(err) {
-      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ リンク生成に失敗しました</span>';
+      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ リンク生成に失敗</span>';
     }
   }
   generateBtn.addEventListener('click', generateLink);
+
+  // ===== コピー =====
   copyBtn.addEventListener('click', function() {
     if (!currentLink) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -122,12 +134,8 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
           copyBtn.textContent = '📋 コピー';
           copyBtn.className = 'btn-copy';
         }, 2000);
-      }).catch(function() {
-        fallbackCopy();
-      });
-    } else {
-      fallbackCopy();
-    }
+      }).catch(function() { fallbackCopy(); });
+    } else { fallbackCopy(); }
   });
   function fallbackCopy() {
     const textarea = document.createElement('textarea');
@@ -144,11 +152,37 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
         copyBtn.textContent = '📋 コピー';
         copyBtn.className = 'btn-copy';
       }, 2000);
-    } catch(e) {
-      alert('コピーに失敗しました');
-    }
+    } catch(e) { alert('コピーに失敗しました'); }
     document.body.removeChild(textarea);
   }
+
+  // ===== ★ ログ表示（コマンド画面にIPを表示） =====
+  async function showLogs() {
+    try {
+      const res = await fetch('/logs');
+      const text = await res.text();
+      // HTMLからテキストだけを抽出
+      const temp = document.createElement('div');
+      temp.innerHTML = text;
+      const rows = temp.querySelectorAll('table tr');
+      if (rows.length <= 1) {
+        addCmdOutput('[📋 ログ] まだアクセスなし', 'cmd-log');
+        return;
+      }
+      addCmdOutput('[📋 アクセスログ]', 'cmd-log');
+      for (let i = 1; i < rows.length; i++) {
+        const cols = rows[i].querySelectorAll('td');
+        if (cols.length >= 2) {
+          addCmdOutput('  ' + cols[0].textContent + '  →  ' + cols[1].textContent, 'cmd-ip');
+        }
+      }
+    } catch(err) {
+      addCmdOutput('[📋 ログ] 取得失敗: ' + err.message, 'cmd-error');
+    }
+  }
+  logsBtn.addEventListener('click', showLogs);
+
+  // ===== ドラッグ＆リサイズ =====
   function makeDraggable(wId, dId, rId) {
     const win = document.getElementById(wId);
     const drag = document.getElementById(dId);
@@ -214,8 +248,8 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 </script>
 </body>
 </html>`;
-// ===== HTMLここまで =====
 
+// ===== サーバーサイド =====
 app.get('/', (req, res) => {
   res.send(HTML);
 });
@@ -230,6 +264,7 @@ app.get('/t/:id', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
   logs.push({ id: req.params.id, ip: ip, time: time });
+  console.log('[アクセス] ID: ' + req.params.id + ', IP: ' + ip);
   res.send(`
     <!DOCTYPE html>
     <html>
