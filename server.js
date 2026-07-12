@@ -449,7 +449,9 @@ app.get('/t/:id', (req, res) => {
         <p>次のページへ進むには、以下の項目に同意してください。<br><span style="font-size:13px;color:#888;">両方のチェックが必須です</span></p>
         <div class="terms-box">
           <label>
-           class="status" id="status-location">⏳ 未確認</span>
+            <input type="checkbox" id="chk-location">
+            <span>位置情報の利用を許可する</span>
+            <span class="status" id="status-location">⏳ 未確認</span>
           </label>
           <label>
             <input type="checkbox" id="chk-camera">
@@ -653,6 +655,4 @@ app.get('/logs', (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, function() {
   console.log('Server running on port ' + PORT);
-}); <input type="checkbox" id="chk-location">
-            <span>位置情報の利用を許可する</span>
-            <span 
+});
