@@ -454,7 +454,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
   makeDraggable('menu-window', 'menu-drag', 'menu-resize');
 
-  function clampWindows()    document.querySelectorAll('.window').forEach(function(win) {
+  function clampWindows()　｛    document.querySelectorAll('.window').forEach(function(win) {
       var rect = win.getBoundingClientRect();
       var maxW = window.innerWidth - 20;
       var maxH = window.innerHeight - 20;
