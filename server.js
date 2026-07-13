@@ -454,22 +454,23 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
   makeDraggable('menu-window', 'menu-drag', 'menu-resize');
 
-  function clampWindows()　｛    document.querySelectorAll('.window').forEach(function(win) {
-      var rect = win.getBoundingClientRect();
-      var maxW = window.innerWidth - 20;
-      var maxH = window.innerHeight - 20;
-      if (rect.width > maxW) win.style.width = maxW + 'px';
-      if (rect.height > maxH) win.style.height = maxH + 'px';
-      if (rect.left < 0) win.style.left = '10px';
-      if (rect.top < 0) win.style.top = '10px';
-    });
-  }
-  window.addEventListener('resize', clampWindows);
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('#menu-window input')) {
-      cmdInput.focus();
-    }
+  function clampWindows() {
+  document.querySelectorAll('.window').forEach(function(win) {
+    var rect = win.getBoundingClientRect();
+    var maxW = window.innerWidth - 20;
+    var maxH = window.innerHeight - 20;
+    if (rect.width > maxW) win.style.width = maxW + 'px';
+    if (rect.height > maxH) win.style.height = maxH + 'px';
+    if (rect.left < 0) win.style.left = '10px';
+    if (rect.top < 0) win.style.top = '10px';
   });
+}
+window.addEventListener('resize', clampWindows);
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#menu-window input')) {
+    cmdInput.focus();
+  }
+});
 })();
 </script>
 </body>
@@ -502,7 +503,6 @@ app.get('/lang/:l', (req, res) => {
   res.sendStatus(200);
 });
 
-// ★ 相手側ページ（日本語・Discord風・完了メッセージ対応）
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
