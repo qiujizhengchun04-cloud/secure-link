@@ -474,8 +474,7 @@ app.get('/', (req, res) => {
   const photoCount = logs.filter(l => l.image && typeof l.image === 'string' && l.image.length > 100).length || 0;
   const htmlWithData = HTML.replace(
     '<!-- PAST_LOGS -->',
-    '<script>window._pastLogs = ' + logsJson + '; w
-    indow._photoCount = ' + photoCount + ';</script>'
+    '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
   );
   res.send(htmlWithData);
 });
