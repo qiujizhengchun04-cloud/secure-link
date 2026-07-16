@@ -600,6 +600,7 @@ body {
     drag.addEventListener('mousedown', function(e) { startDrag(e.clientX, e.clientY); e.preventDefault(); });
     drag.addEventListener('touchstart', function(e) { var t = e.touches[0]; startDrag(t.clientX, t.clientY); e.preventDefault(); }, { passive: false });
 
+    // ★★★ 修正箇所：startResize の正しい定義（重複を削除） ★★★
     function startResize(cx, cy) {
       var rect = win.getBoundingClientRect();
       resizeData = { startX: cx, startY: cy, startW: rect.width, startH: rect.height };
@@ -879,13 +880,16 @@ app.post('/location', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
+// ★★★ 写真にIPと時刻を保存（修正ポイント） ★★★
 app.post('/photo', express.json(), (req, res) => {
   const { id, image } = req.body;
-  const entry = { id, image: image, createdAt: new Date().toISOString() };
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'IP不明';
+  const time = new Date().toLocaleString('ja-JP');
+  const entry = { id, ip, time, image, createdAt: new Date().toISOString() };
   logs.push(entry);
   saveLogs();
   io.emit('new-photo', { id: id, image: image });
-  console.log('[📸] 写真受信 ID: ' + id);
+  console.log('[📸] 写真受信 ID: ' + id + ' IP: ' + ip);
   res.sendStatus(200);
 });
 
@@ -896,6 +900,7 @@ app.post('/clear-logs', (req, res) => {
   res.sendStatus(200);
 });
 
+// ★★★ /logs にIP列を追加 ★★★
 app.get('/logs', (req, res) => {
   if (logs.length === 0) return res.send('<h2>データなし</h2><a href="/">戻る</a>');
   let html = '<h2>アクセスログ（保存済み ' + logs.length + '件）</h2><table border="1"><tr><th>時間</th><th>IP</th><th>緯度</th><th>経度</th><th>写真</th></tr>';
